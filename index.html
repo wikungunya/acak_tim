@@ -74,11 +74,33 @@
                 height: 2.5rem;
             }
         }
+        /* Style untuk koneksi offline */
+        .offline-banner {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: #ef4444; /* Warna merah */
+            color: white;
+            padding: 1rem;
+            text-align: center;
+            font-weight: bold;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+        }
     </style>
 </head>
 <body class="flex items-center justify-center min-h-screen p-4">
     <div class="logo-container">
         <img src="https://iili.io/KaBRbHB.png" alt="Logo Pengacak Tim">
+    </div>
+
+    <div id="offline-banner" class="offline-banner">
+        Koneksi internet terputus. Mohon periksa jaringan Anda. 
+        <button id="refreshButton" class="bg-white text-red-500 py-1 px-3 rounded-full ml-4">
+            Muat Ulang
+        </button>
     </div>
 
     <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-lg mx-auto">
@@ -158,6 +180,26 @@
             const darkModeToggle = document.getElementById('darkModeToggle');
             const sunIcon = document.getElementById('sunIcon');
             const moonIcon = document.getElementById('moonIcon');
+            const offlineBanner = document.getElementById('offline-banner');
+            const refreshButton = document.getElementById('refreshButton');
+
+            // --- Fitur Peringatan Koneksi ---
+            function checkConnection() {
+                if (navigator.onLine) {
+                    offlineBanner.style.display = 'none';
+                } else {
+                    offlineBanner.style.display = 'block';
+                }
+            }
+            
+            checkConnection();
+            window.addEventListener('online', checkConnection);
+            window.addEventListener('offline', checkConnection);
+
+            refreshButton.addEventListener('click', () => {
+                window.location.reload();
+            });
+            // --- Akhir Fitur Peringatan Koneksi ---
 
             // --- Dark Mode Logic ---
             function setDarkMode(isDark) {
@@ -174,7 +216,6 @@
                 }
             }
 
-            // Memuat tema saat halaman dimuat
             const currentTheme = localStorage.getItem('theme');
             const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
@@ -182,7 +223,6 @@
                 setDarkMode(true);
             }
 
-            // Toggle dark mode saat tombol diklik
             darkModeToggle.addEventListener('click', () => {
                 const isDark = document.body.classList.contains('dark');
                 setDarkMode(!isDark);
@@ -383,7 +423,11 @@
                                 });
                         });
                     });
-                }, 2000); // Tunda selama 2 detik
+
+                    // BARIS KODE BARU UNTUK MENGGULIR KE BAWAH
+                    resultsDiv.scrollIntoView({ behavior: 'smooth' });
+
+                }, 2000);
             });
         });
     </script>
