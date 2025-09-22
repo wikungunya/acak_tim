@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pengacak Tim</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8;
+        }
+        /* CSS untuk animasi berputar */
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        .spinning {
+            animation: spin 1s linear infinite;
+        }
+        /* Style untuk logo */
+        .logo-container {
+            position: absolute;
+            top: 2rem; /* Jarak dari atas */
+            left: 2rem; /* Jarak dari kiri */
+        }
+        .logo-container img {
+            height: 3rem; /* Ukuran logo */
+            width: auto;
+        }
+        @media (max-width: 640px) {
+            .logo-container {
+                top: 1rem;
+                left: 1rem;
+            }
+            .logo-container img {
+                height: 2.5rem;
+            }
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+    <div class="logo-container">
+        <img src="https://via.placeholder.com/150/0000FF/FFFFFF?text=LOGO" alt="Logo Pengacak Tim">
+    </div>
+
+    <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-lg mx-auto">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">Pengacak Tim</h1>
+        <p class="text-gray-600 mb-4 text-center">
+            Masukkan nama anggota, satu nama per baris, dan tentukan jumlah anggota per tim.
+        </p>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+                <label for="membersPerTeam" class="block text-gray-700 font-medium mb-1">Anggota per Tim</label>
+                <input type="number" id="membersPerTeam" value="2" min="2" class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <p class="text-sm text-gray-500 mt-1">Minimal 2 anggota per tim.</p>
+            </div>
+            <div>
+                <label for="totalPlayersInput" class="block text-gray-700 font-medium mb-1">Total Pemain</label>
+                <input type="number" id="totalPlayersInput" class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <p class="text-sm text-gray-500 mt-1">Masukkan jumlah total pemain yang akan diacak.</p>
+            </div>
+        </div>
+
+        <div id="teamNameInputs" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+            </div>
+
+        <div class="space-y-4">
+            <textarea id="nameInput" rows="8" placeholder="Masukkan nama anggota di sini (satu per baris)..." class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow resize-none"></textarea>
+            <button id="shuffleButton" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-colors duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                Acak Tim
+            </button>
+        </div>
+
+        <div id="spinner" class="mt-8 flex justify-center hidden">
+            <svg class="h-16 w-16 text-blue-500" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8z" fill="currentColor"/>
+                <path d="M12 4a8 8 0 018 8h-2a6 6 0 00-6-6V4z" fill="currentColor"/>
+            </svg>
+        </div>
+
+        <div id="results" class="mt-8 space-y-6">
+            </div>
+
+        <div id="alertModal" class="fixed inset-0 z-50 hidden overflow-y-auto bg-gray-900 bg-opacity-50 flex items-center justify-center">
+            <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full mx-4">
+                <h2 class="text-xl font-bold text-gray-800 mb-2">Peringatan!</h2>
+                <p id="alertMessage" class="text-gray-600 mb-4"></p>
+                <div class="text-right">
+                    <button id="closeAlert" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-full transition-colors duration-300">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const nameInput = document.getElementById('nameInput');
+            const membersPerTeamInput = document.getElementById('membersPerTeam');
+            const totalPlayersInput = document.getElementById('totalPlayersInput');
+            const teamNameInputsDiv = document.getElementById('teamNameInputs');
+            const shuffleButton = document.getElementById('shuffleButton');
+            const resultsDiv = document.getElementById('results');
+            const spinner = document.getElementById('spinner');
+            const alertModal = document.getElementById('alertModal');
+            const alertMessage = document.getElementById('alertMessage');
+            const closeAlertButton = document.getElementById('closeAlert');
+
+            // Fungsi untuk menyimpan data ke Local Storage
+            function saveState() {
+                localStorage.setItem('names', nameInput.value);
+                localStorage.setItem('membersPerTeam', membersPerTeamInput.value);
+                localStorage.setItem('totalPlayers', totalPlayersInput.value);
+            }
+
+            // Fungsi untuk memuat data dari Local Storage
+            function loadState() {
+                const savedNames = localStorage.getItem('names');
+                const savedMembersPerTeam = localStorage.getItem('membersPerTeam');
+                const savedTotalPlayers = localStorage.getItem('totalPlayers');
+
+                if (savedNames) {
+                    nameInput.value = savedNames;
+                }
+                if (savedMembersPerTeam) {
+                    membersPerTeamInput.value = savedMembersPerTeam;
+                }
+                if (savedTotalPlayers) {
+                    totalPlayersInput.value = savedTotalPlayers;
+                }
+                // Panggil fungsi updateTeamNameInputs setelah memuat data
+                updateTeamNameInputs();
+            }
+
+            function showAlert(message) {
+                alertMessage.textContent = message;
+                alertModal.classList.remove('hidden');
+            }
+
+            function updateTeamNameInputs() {
+                const names = nameInput.value.split('\n').map(name => name.trim()).filter(name => name !== '');
+                const membersPerTeam = parseInt(membersPerTeamInput.value, 10);
+                
+                if (isNaN(membersPerTeam) || membersPerTeam < 2) {
+                    teamNameInputsDiv.innerHTML = '';
+                    return;
+                }
+
+                const numberOfTeams = Math.floor(names.length / membersPerTeam);
+                teamNameInputsDiv.innerHTML = '';
+
+                for (let i = 1; i <= numberOfTeams; i++) {
+                    const div = document.createElement('div');
+                    div.innerHTML = `
+                        <label for="teamName${i}" class="block text-gray-700 font-medium mb-1">Nama Tim ${i}</label>
+                        <input type="text" id="teamName${i}" placeholder="Contoh: Tim ${i}" class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    `;
+                    teamNameInputsDiv.appendChild(div);
+                }
+            }
+            
+            // Tambahkan event listener untuk menyimpan state saat input berubah
+            nameInput.addEventListener('input', () => {
+                updateTeamNameInputs();
+                saveState();
+            });
+            membersPerTeamInput.addEventListener('input', () => {
+                updateTeamNameInputs();
+                saveState();
+            });
+            totalPlayersInput.addEventListener('input', saveState);
+
+            // Muat state saat halaman pertama kali dimuat
+            loadState();
+
+            closeAlertButton.addEventListener('click', () => {
+                alertModal.classList.add('hidden');
+            });
+
+            shuffleButton.addEventListener('click', () => {
+                const names = nameInput.value
+                    .split('\n')
+                    .map(name => name.trim())
+                    .filter(name => name !== '');
+
+                const membersPerTeam = parseInt(membersPerTeamInput.value, 10);
+                const totalPlayers = parseInt(totalPlayersInput.value, 10);
+
+                if (names.length === 0) {
+                    showAlert('Masukkan nama anggota terlebih dahulu.');
+                    return;
+                }
+                if (isNaN(membersPerTeam) || membersPerTeam < 2) {
+                    showAlert('Jumlah anggota per tim harus berupa angka dan minimal 2.');
+                    return;
+                }
+                
+                if (!isNaN(totalPlayers) && names.length !== totalPlayers) {
+                    showAlert(`Jumlah nama yang dimasukkan (${names.length}) tidak cocok dengan jumlah total pemain (${totalPlayers}) yang Anda tentukan.`);
+                    return;
+                }
+
+                if (names.length < membersPerTeam) {
+                    showAlert(`Minimal ${membersPerTeam} nama diperlukan untuk satu tim.`);
+                    return;
+                }
+                if (names.length % membersPerTeam !== 0) {
+                    showAlert(`Jumlah total anggota (${names.length}) tidak dapat dibagi rata menjadi tim beranggotakan ${membersPerTeam} orang. Sisa anggota: ${names.length % membersPerTeam}.`);
+                    return;
+                }
+                
+                const numberOfTeams = Math.floor(names.length / membersPerTeam);
+
+                shuffleButton.disabled = true;
+                resultsDiv.innerHTML = '';
+                spinner.classList.remove('hidden');
+                spinner.querySelector('svg').classList.add('spinning');
+
+                setTimeout(() => {
+                    for (let i = names.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [names[i], names[j]] = [names[j], names[i]];
+                    }
+
+                    spinner.classList.add('hidden');
+                    spinner.querySelector('svg').classList.remove('spinning');
+                    shuffleButton.disabled = false;
+
+                    const teamsData = [];
+                    for (let i = 0; i < numberOfTeams; i++) {
+                        const teamNameInput = document.getElementById(`teamName${i + 1}`);
+                        const teamName = teamNameInput ? teamNameInput.value.trim() : `Tim ${i + 1}`;
+                        const members = names.slice(i * membersPerTeam, (i + 1) * membersPerTeam);
+                        teamsData.push({ name: teamName, members: members });
+                    }
+
+                    let resultsTextForCopy = "Hasil Pengacakan Tim:\n\n";
+
+                    teamsData.forEach((team) => {
+                        const teamCard = document.createElement('div');
+                        teamCard.className = 'bg-gray-100 p-6 rounded-lg shadow-md';
+                        
+                        const membersList = team.members.map(member => `<li>${member}</li>`).join('');
+
+                        teamCard.innerHTML = `
+                            <h3 class="text-xl font-semibold text-gray-700 mb-2">${team.name}</h3>
+                            <ul class="list-disc list-inside space-y-1 text-gray-600">
+                                ${membersList}
+                            </ul>
+                            <button class="copy-button mt-4 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-1 px-3 rounded-full text-sm transition-colors duration-300">
+                                Salin Tim Ini
+                            </button>
+                        `;
+                        resultsDiv.appendChild(teamCard);
+
+                        resultsTextForCopy += `${team.name}:\n`;
+                        team.members.forEach(member => {
+                            resultsTextForCopy += `- ${member}\n`;
+                        });
+                        resultsTextForCopy += "\n";
+                    });
+
+                    if (teamsData.length > 0) {
+                        const copyAllButtonDiv = document.createElement('div');
+                        copyAllButtonDiv.className = 'mt-6 text-center';
+                        copyAllButtonDiv.innerHTML = `
+                            <button id="copyAllTeams" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-5 rounded-lg transition-colors duration-300 transform hover:scale-105">
+                                Salin Semua Hasil Tim
+                            </button>
+                        `;
+                        resultsDiv.appendChild(copyAllButtonDiv);
+
+                        document.getElementById('copyAllTeams').addEventListener('click', () => {
+                            navigator.clipboard.writeText(resultsTextForCopy)
+                                .then(() => {
+                                    alert('Semua hasil tim berhasil disalin!');
+                                })
+                                .catch(err => {
+                                    console.error('Gagal menyalin semua hasil tim:', err);
+                                    alert('Gagal menyalin. Silakan coba secara manual.');
+                                });
+                        });
+                    }
+
+                    document.querySelectorAll('.copy-button').forEach(button => {
+                        button.addEventListener('click', (event) => {
+                            const teamCard = event.target.closest('.bg-gray-100');
+                            const teamName = teamCard.querySelector('h3').textContent;
+                            const members = Array.from(teamCard.querySelectorAll('li')).map(li => li.textContent);
+                            
+                            let textToCopy = `${teamName}:\n`;
+                            members.forEach(member => {
+                                textToCopy += `- ${member}\n`;
+                            });
+
+                            navigator.clipboard.writeText(textToCopy)
+                                .then(() => {
+                                    alert(`Tim "${teamName}" berhasil disalin!`);
+                                })
+                                .catch(err => {
+                                    console.error('Gagal menyalin tim:', err);
+                                    alert('Gagal menyalin. Silakan coba secara manual.');
+                                });
+                        });
+                    });
+                }, 2000); // Tunda selama 2 detik
+            });
+        });
+    </script>
+</body>
+</html>
